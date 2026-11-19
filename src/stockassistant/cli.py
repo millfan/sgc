@@ -127,6 +127,22 @@ def cmd_monitor(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_update_universe(args: argparse.Namespace) -> int:
+    from stockassistant.data.universe_list import fetch_sp500, write_members
+
+    s = _settings(args)
+    if not s.data.universe_file:
+        print("data.universe_file is empty in the config; nothing to update", file=sys.stderr)
+        return 1
+    old = {m.ticker for m in s.universe_members()} if s.data.universe_file else set()
+    members = fetch_sp500()
+    path = write_members(members, s.data.universe_file)
+    new = {m.ticker for m in members}
+    print(f"Wrote {len(members)} S&P 500 constituents to {path}")
+    print(f"added: {sorted(new - old) or 'none'}; removed: {sorted(old - new) or 'none'}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="stockassistant", description=__doc__)
     p.add_argument("--config", help="TOML config file (default: config/default.toml)")
@@ -157,6 +173,9 @@ def build_parser() -> argparse.ArgumentParser:
     m.add_argument("--summarize", action="store_true", help="add a plain-language LLM summary")
     m.add_argument("--llm", choices=["anthropic", "offline"], help="override the LLM provider")
     m.set_defaults(func=cmd_monitor)
+
+    u = sub.add_parser("update-universe", help="refresh the S&P 500 constituent list in the universe file")
+    u.set_defaults(func=cmd_update_universe)
     return p
 
 

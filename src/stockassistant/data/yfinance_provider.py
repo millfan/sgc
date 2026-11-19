@@ -9,6 +9,7 @@ Limits to keep in mind (also listed in the README):
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 
 import pandas as pd
@@ -17,6 +18,7 @@ from stockassistant.schemas import Fundamentals, NewsItem
 
 log = logging.getLogger(__name__)
 FRESH_DAYS = 7
+MAX_WORKERS = 8  # concurrent requests; keep modest so Yahoo does not rate-limit the run
 
 
 def _f(info: dict, key: str) -> float | None:
@@ -67,12 +69,21 @@ class YFinanceProvider:
         mask = close.index <= pd.Timestamp(end)
         return close[mask], volume[mask]
 
+    def _prefetch(self, tickers: list[str]) -> None:
+        """Fetch per-ticker info concurrently; with about 500 names a serial loop takes minutes."""
+        missing = [t for t in tickers if t not in self._info]
+        if missing:
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+                list(pool.map(self._ticker_info, missing))
+
     def sectors(self, tickers: list[str]) -> dict[str, str]:
+        self._prefetch(tickers)
         return {t: str(self._ticker_info(t).get("sector") or "Unknown") for t in tickers}
 
     def fundamentals(self, tickers: list[str], as_of: date) -> dict[str, Fundamentals]:
         if (date.today() - as_of).days > FRESH_DAYS:
             return {}  # not point-in-time: never hand today's fundamentals to a past run date
+        self._prefetch(tickers)
         out: dict[str, Fundamentals] = {}
         for t in tickers:
             info = self._ticker_info(t)
@@ -98,15 +109,22 @@ class YFinanceProvider:
             )
         return out
 
+    def _raw_news(self, ticker: str) -> list[dict] | None:
+        try:
+            return self._yf.Ticker(ticker).news or []
+        except Exception as exc:
+            log.warning("yfinance news failed for %s: %s", ticker, exc)
+            return None
+
     def news(self, tickers: list[str], as_of: date) -> dict[str, list[NewsItem]]:
         if (date.today() - as_of).days > FRESH_DAYS:
             return {}
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+            fetched = dict(zip(tickers, pool.map(self._raw_news, tickers), strict=True))
         out: dict[str, list[NewsItem]] = {}
         for t in tickers:
-            try:
-                raw_items = self._yf.Ticker(t).news or []
-            except Exception as exc:
-                log.warning("yfinance news failed for %s: %s", t, exc)
+            raw_items = fetched[t]
+            if raw_items is None:
                 continue
             items: list[NewsItem] = []
             for i, item in enumerate(raw_items[:10]):

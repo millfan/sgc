@@ -201,7 +201,7 @@ Legend: blue boxes are deterministic code, amber boxes use an LLM, red shapes ar
 
 Responsibility: fetch prices and fundamentals, check data quality, and filter to a tradable universe of individual stocks.
 
-- **Inputs:** run date, universe rules (exchange, minimum price, minimum average dollar volume, minimum market cap, listing age).
+- **Inputs:** run date, the starting universe (all S&P 500 constituents, kept in `config/universe/sp500.csv`), universe rules (exchange, minimum price, minimum average dollar volume, minimum market cap, listing age).
 - **Outputs:** `MarketDataSnapshot` (adjusted OHLCV, fundamentals, benchmark index series, all point-in-time as of the run date) and `Universe` (tickers that pass the rules, with the reason any ticker was dropped).
 - **Quality checks:** missing bars, stale prices, split and dividend adjustment, outlier returns, survivorship bias (include delisted names in history), and look-ahead in fundamentals (use the date a filing became public, not the period it covers).
 - **Patterns:**
