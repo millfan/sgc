@@ -2,6 +2,8 @@
 
 This plan turns the brief in [CLAUDE.md](CLAUDE.md) into a sequence of pipeline stages and milestones. It covers stocks only.
 
+The technology choices (models, framework, deployment, language, memory database) are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 Book abbreviations: `ml4t` is *Machine Learning for Algorithmic Trading* (Third Edition) and `baa4f` is *Building AI Agents for Finance*. Chapter numbers below were checked against the local copies of both books.
 
 ## Pipeline overview
