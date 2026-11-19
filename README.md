@@ -13,6 +13,7 @@ The architecture doc left three questions open. Until you decide otherwise, the 
 |----------|---------|--------------------|
 | Data provider | Free Yahoo Finance data through `yfinance`, behind the `MarketDataProvider` interface in `src/stockassistant/data/provider.py`. An offline `synthetic` provider is included for tests and demos. | `[data] provider` in `config/default.toml`; add a class implementing the protocol for a paid provider |
 | Rebalance frequency | Monthly | `[run] rebalance_frequency` (`monthly` or `weekly`) |
+| Starting universe | All S&P 500 constituents, from `config/universe/sp500.csv` (ticker, name, GICS sector, date added). Stage 1 filters them by price, liquidity, market cap and history. Refresh the list with `uv run stockassistant update-universe`. | `[data] universe_file` and `[data] tickers` (extra names) |
 | Java dashboard | None | Not started; the journal schema in `db/01-schema.sql` is ready for one later |
 
 ## Quick start
@@ -77,6 +78,7 @@ uv run pyright
 ## Layout
 
 ```
+config/universe/sp500.csv    the starting universe (S&P 500 constituents with sectors and dates added)
 config/default.toml          all tunable values: universe rules, alpha, tilts, debate rules, risk limits, costs, models
 db/                          Postgres schema (journal, knowledge base) and the insert/select-only app role
 src/stockassistant/

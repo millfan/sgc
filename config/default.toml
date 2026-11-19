@@ -11,17 +11,11 @@ journal_dir = "runs"            # file journal location when DATABASE_URL is not
 provider = "yfinance"           # "yfinance" (free) or "synthetic" (offline, deterministic)
 benchmark = "SPY"
 lookback_days = 1100            # calendar days of history before the run date (features use 1 year, the alpha model trains on the rest)
-# Starting universe: liquid US large caps across sectors. Stage 1 filters it further.
-tickers = [
-    "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "AVGO", "ORCL", "CRM", "ADBE",
-    "JPM", "BAC", "WFC", "GS", "MS", "V", "MA", "BLK",
-    "UNH", "JNJ", "LLY", "PFE", "MRK", "ABBV", "TMO",
-    "XOM", "CVX", "COP", "SLB",
-    "PG", "KO", "PEP", "WMT", "COST", "MCD", "NKE", "HD",
-    "CAT", "HON", "GE", "UPS", "DE", "LMT",
-    "NEE", "DUK", "SO",
-    "LIN", "SHW", "AMT", "PLD",
-]
+# Starting universe: every S&P 500 constituent, with GICS sector and the date it joined the index.
+# Refresh the file with `stockassistant update-universe`. Stage 1 then filters it with [universe] rules.
+universe_file = "config/universe/sp500.csv"
+# Extra tickers to add to the universe file (or the whole universe if universe_file is set to "").
+tickers = []
 
 [universe]
 min_price = 5.0

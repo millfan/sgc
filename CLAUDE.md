@@ -48,6 +48,7 @@ Commands (Python 3.12+, `uv`):
 - Types: `uv run pyright` (basic mode; pandas 3's inline types still report false positives, so it is not yet a gate)
 - Offline run: `uv run stockassistant --provider synthetic run --date 2024-06-28 --llm offline`
 - Live run: `ANTHROPIC_API_KEY=... uv run stockassistant run`, then `approve <run-id>` and `monitor`
+- Refresh the S&P 500 universe list: `uv run stockassistant update-universe`
 - Backtest: `uv run stockassistant backtest --start 2023-01-01 --end 2025-12-31 [--mode full --llm offline]`
 
 Module layout:
@@ -58,7 +59,7 @@ Module layout:
 - `src/stockassistant/agents/<role>/SKILL.md`: one prompt file per agent role with its model and effort in the front matter.
 - `src/stockassistant/llm/`: the Anthropic client, the offline rule-based client and the skill loader.
 - `src/stockassistant/data/`: the provider protocol and its implementations. `src/stockassistant/memory/`: the journal.
-- `config/default.toml`: every tunable value, including risk limits and per-role model overrides. `db/`: the Postgres schema.
+- `config/universe/sp500.csv`: the starting universe (all S&P 500 constituents). `config/default.toml`: every tunable value, including risk limits and per-role model overrides. `db/`: the Postgres schema.
 
 Rules to keep when changing code: numbers given to an agent come from code, never from the model; every agent output is a schema; citations are checked in code; the risk review can only cut; secrets come only from environment variables.
 

@@ -9,6 +9,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from stockassistant.data.universe_list import Member, load_members
+
 DEFAULT_CONFIG = Path(__file__).resolve().parents[2] / "config" / "default.toml"
 
 
@@ -22,6 +24,7 @@ class DataConfig(BaseModel):
     provider: Literal["yfinance", "synthetic"] = "yfinance"
     benchmark: str = "SPY"
     lookback_days: int = 1100
+    universe_file: str = "config/universe/sp500.csv"
     tickers: list[str] = Field(default_factory=list)
 
 
@@ -104,6 +107,13 @@ class Settings(BaseModel):
     risk: RiskLimits = Field(default_factory=RiskLimits)
     execution: ExecutionConfig = Field(default_factory=ExecutionConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
+
+    def universe_members(self) -> list[Member]:
+        """The starting universe: the universe file's members plus any extra configured tickers."""
+        members = list(load_members(self.data.universe_file)) if self.data.universe_file else []
+        known = {m.ticker for m in members}
+        members += [Member(ticker=t) for t in self.data.tickers if t not in known]
+        return members
 
     @property
     def database_url(self) -> str | None:

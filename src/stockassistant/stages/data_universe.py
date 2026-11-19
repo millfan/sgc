@@ -53,7 +53,13 @@ def run(
     provider: MarketDataProvider,
     always_include: list[str] | None = None,
 ) -> tuple[MarketDataSnapshot, Universe]:
-    tickers: list[str] = list(dict.fromkeys([*settings.data.tickers, *(always_include or [])]))
+    listed = settings.universe_members()
+    # A ticker that joined the index after the run date was not in the universe yet (backtests).
+    not_yet = {m.ticker for m in listed if m.date_added and m.date_added > as_of} - set(always_include or [])
+    file_sectors = {m.ticker: m.sector for m in listed if m.sector and m.sector != "Unknown"}
+    tickers: list[str] = list(
+        dict.fromkeys([*(m.ticker for m in listed if m.ticker not in not_yet), *(always_include or [])])
+    )
     benchmark = settings.data.benchmark
     start = as_of - timedelta(days=settings.data.lookback_days)
     close, volume = provider.history([*tickers, benchmark], start, as_of)
@@ -68,12 +74,16 @@ def run(
 
     good = [t for t in tickers if t in close.columns and t not in quality.failed]
     close = close.ffill()
-    sectors = provider.sectors(good)
+    need_sector = [t for t in good if t not in file_sectors]
+    sectors = {t: file_sectors[t] for t in good if t in file_sectors} | (
+        provider.sectors(need_sector) if need_sector else {}
+    )
     fundamentals = provider.fundamentals(good, as_of)
 
     cfg = settings.universe
     dropped: dict[str, str] = {t: f"data quality: {r}" for t, r in quality.failed.items() if t != benchmark}
     dropped.update({t: "no data" for t in tickers if t not in close.columns})
+    dropped.update({t: "joined the index after the run date" for t in not_yet})
     members: list[str] = []
     for t in good:
         s = close[t].dropna()
