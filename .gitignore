@@ -3,3 +3,10 @@ baa4f-code/
 ml4t/
 ml4t-code/
 .DS_Store
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+runs/
+.env

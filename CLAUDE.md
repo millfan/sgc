@@ -33,9 +33,34 @@ The pipeline is a sequence of stages, and **each stage is its own agent** with a
 
 Keep each agent separate and give stages explicit, typed inputs and outputs, so that a stage can be tested, replaced, or rerun on its own.
 
-## Project status
+## Project status and commands
 
-There is no source code yet: the only tracked files are this one, `PLAN.md`, and `.gitignore`. No language, dependency manager, build, lint, or test commands have been chosen. Once they exist, update this file with the commands (including how to run a single test) and the actual module layout.
+The pipeline is implemented end to end in Python (see [README.md](README.md)): all eleven stages, the LangGraph wiring, the CLI, Docker Compose with Postgres + pgvector, and tests that mock the LLM. Paper trading only: nothing places orders.
+
+Defaults for the questions [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) left open: data from `yfinance` behind the `MarketDataProvider` protocol, monthly rebalancing, and no Java dashboard.
+
+Commands (Python 3.12+, `uv`):
+
+- Install: `uv sync --extra postgres`
+- All tests: `uv run pytest` (no network or API key needed; the LLM is mocked)
+- One test: `uv run pytest tests/test_risk_and_execution.py::test_review_can_only_cut`
+- Lint and format: `uv run ruff check . && uv run ruff format --check .`
+- Types: `uv run pyright` (basic mode; pandas 3's inline types still report false positives, so it is not yet a gate)
+- Offline run: `uv run stockassistant --provider synthetic run --date 2024-06-28 --llm offline`
+- Live run: `ANTHROPIC_API_KEY=... uv run stockassistant run`, then `approve <run-id>` and `monitor`
+- Backtest: `uv run stockassistant backtest --start 2023-01-01 --end 2025-12-31 [--mode full --llm offline]`
+
+Module layout:
+
+- `src/stockassistant/schemas.py`: every stage contract (frozen, versioned Pydantic models) and the LLM output schemas.
+- `src/stockassistant/stages/<stage>.py`: one module per stage, each a plain `run()` function. Keep LangGraph out of them.
+- `src/stockassistant/graph.py`: the LangGraph wiring, the journal hook and the risk retry loop.
+- `src/stockassistant/agents/<role>/SKILL.md`: one prompt file per agent role with its model and effort in the front matter.
+- `src/stockassistant/llm/`: the Anthropic client, the offline rule-based client and the skill loader.
+- `src/stockassistant/data/`: the provider protocol and its implementations. `src/stockassistant/memory/`: the journal.
+- `config/default.toml`: every tunable value, including risk limits and per-role model overrides. `db/`: the Postgres schema.
+
+Rules to keep when changing code: numbers given to an agent come from code, never from the model; every agent output is a schema; citations are checked in code; the risk review can only cut; secrets come only from environment variables.
 
 ## Reference material is local only
 

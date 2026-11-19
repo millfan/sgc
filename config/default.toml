@@ -1,0 +1,80 @@
+# Default configuration for the stock assistant pipeline.
+# Copy this file and pass it with `--config` to change any value.
+# Secrets (ANTHROPIC_API_KEY, DATABASE_URL) come from environment variables, never from this file.
+
+[run]
+portfolio_value = 100000.0      # paper portfolio size in USD, used when no holdings file is given
+rebalance_frequency = "monthly" # default chosen while the open question in docs/ARCHITECTURE.md is unanswered
+journal_dir = "runs"            # file journal location when DATABASE_URL is not set
+
+[data]
+provider = "yfinance"           # "yfinance" (free) or "synthetic" (offline, deterministic)
+benchmark = "SPY"
+lookback_days = 1100            # calendar days of history before the run date (features use 1 year, the alpha model trains on the rest)
+# Starting universe: liquid US large caps across sectors. Stage 1 filters it further.
+tickers = [
+    "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "AVGO", "ORCL", "CRM", "ADBE",
+    "JPM", "BAC", "WFC", "GS", "MS", "V", "MA", "BLK",
+    "UNH", "JNJ", "LLY", "PFE", "MRK", "ABBV", "TMO",
+    "XOM", "CVX", "COP", "SLB",
+    "PG", "KO", "PEP", "WMT", "COST", "MCD", "NKE", "HD",
+    "CAT", "HON", "GE", "UPS", "DE", "LMT",
+    "NEE", "DUK", "SO",
+    "LIN", "SHW", "AMT", "PLD",
+]
+
+[universe]
+min_price = 5.0
+min_avg_dollar_volume = 20000000.0  # 20-day average, USD
+min_market_cap = 5000000000.0
+min_history_days = 252              # listing age, in trading days
+max_missing_fraction = 0.05         # data-quality guardrail per ticker
+max_abs_daily_return = 0.5          # outlier guardrail
+
+[alpha]
+short_list_size = 12
+forecast_horizon_days = 21
+min_train_dates = 24                # walk-forward training dates required before the ML model is used
+embargo_days = 21                   # gap between the last training label and the scoring date
+min_oos_ic = 0.0                    # below this, fall back to the equal-weighted factor composite
+
+[portfolio]
+max_positions = 10
+tilt_step = 0.15                    # weight multiplier change per tilt unit (tilts are -2..+2)
+max_tilt_units = 2
+self_consistency_samples = 3
+risk_off_gross = 0.8                # invested fraction when the regime is risk-off
+risk_on_gross = 1.0
+
+[debate]
+trim_fraction = 0.3                 # a "trim" cuts this fraction of the weight, scaled by judge confidence
+add_fraction = 0.2                  # an "add" raises the weight by this fraction, scaled by confidence
+max_change = 0.05                   # absolute weight change cap per position per adjustment
+
+[risk]
+max_weight = 0.15
+max_sector = 0.35
+min_holdings = 5
+max_volatility = 0.25               # annualized, ex-ante from trailing covariance
+max_beta = 1.3
+max_drawdown = 0.30                 # trailing simulated drawdown of the target weights
+max_adv_fraction = 0.05             # position notional as a share of 20-day average dollar volume
+risk_off_max_gross = 0.8
+max_retries = 1
+
+[execution]
+commission_per_share = 0.005
+half_spread_bps = 2.0
+impact_coefficient = 0.1            # impact (fraction) = k * daily vol * sqrt(shares / ADV shares)
+no_trade_band = 0.005               # skip a trade when |target - current| weight is below this
+max_turnover = 0.5                  # one-way turnover cap per rebalance
+max_cost_bps = 50.0                 # skip a trade whose estimated cost exceeds this
+
+[llm]
+provider = "anthropic"              # "anthropic" or "offline" (deterministic rule-based stand-in, no API calls)
+max_calls_per_run = 400             # loop budget for the whole run
+use_refusal_fallbacks = true
+
+# Per-role overrides of the model and effort set in each agent's SKILL.md front matter.
+[llm.roles]
+# portfolio_manager = { model = "claude-opus-5-5", effort = "high" }
