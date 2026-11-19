@@ -179,7 +179,8 @@ def run_backtest(
     cagr, vol, sharpe, dd = _stats(eq)
     b_cagr, _, b_sharpe, _ = _stats(bench)
     caveats = [
-        "The universe is today's S&P 500 list (names join on their date added), so companies that left the index are missing: survivorship bias.",
+        "The universe is today's S&P 500 list (names join on their date added); companies that left "
+        "the index are missing, so history has survivorship bias.",
         "Fills are at the rebalance day's close with modeled costs; real fills differ.",
     ]
     if provider.name == "yfinance":
