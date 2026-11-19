@@ -368,6 +368,18 @@ Responsibility: keep an audit trail and track the live portfolio.
 - Each LLM agent has a versioned prompt file, a model setting, a loop budget, and recorded outputs for regression tests.
 - Stocks only. Anything in the books about other instruments is skipped.
 
+## Implementation status
+
+The first implementation covers all eleven stages end to end (see [README.md](README.md)). Where it is simpler than the design above, so far:
+
+- Analysts receive an evidence pack computed by code before the call (plan-then-execute) instead of calling tools in a ReAct loop.
+- No retrieval yet: the sentiment analyst reads point-in-time headlines from the data provider. The `kb_chunks` table for semantic memory exists, but nothing fills it.
+- The alpha model is a walk-forward ridge regression over price factors, blended with a factor composite; no gradient-boosted or deep models yet. The regime model is rule-based.
+- The manager's self-consistency is in place; self-refine of the thesis and CRITIC-style tool checks in the debate are not.
+- The bear uses Sonnet 5.5; the optional second vendor is not wired in.
+- The person approves a plan with `stockassistant approve` rather than a LangGraph `interrupt()`, and runs are not checkpointed.
+- Episodic memory feeds the regime stage (time in regime) and the monitor; the manager does not read past proposals yet.
+
 ## Milestones
 
 ### Milestone 0: Learn

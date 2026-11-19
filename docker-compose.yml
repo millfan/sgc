@@ -1,0 +1,35 @@
+# Local setup: Postgres 17 with pgvector for the journal, plus the pipeline as a one-shot job.
+#   docker compose up -d db
+#   docker compose run --rm app run
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: stockassistant
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d stockassistant"]
+      interval: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      DATABASE_URL: postgresql://stockassistant_app:${APP_DB_PASSWORD}@db:5432/stockassistant
+    volumes:
+      - ./runs:/app/runs
+    profiles: ["app"]
+
+volumes:
+  pgdata:
