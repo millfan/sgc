@@ -17,18 +17,25 @@ The assistant deals only with individual stocks. Do not add support for options,
 
 ## Planned architecture
 
-The pipeline is a sequence of stages, and **each stage is its own agent** with a single responsibility. A stage takes the previous stage's output as input. The stages planned so far:
+The pipeline is a sequence of stages, and **each stage is its own agent** with a single responsibility. A stage takes earlier stages' typed outputs as input. The full stage list, with each stage's agent, inputs and outputs, book references, and the milestones, is in [PLAN.md](PLAN.md). Keep PLAN.md current when stages change. The stages, in run order:
 
-1. **Market regime assessment**: classify the current market state, for example trend, volatility, or risk-on versus risk-off.
-2. **Stock and weight proposal**: given the regime, propose candidate stocks and initial portfolio weights.
-3. **Adversarial debate**: agents argue for and against the proposal to expose weak picks and hidden risks.
-4. **Weight adjustment**: revise the weights based on the debate's outcome.
+1. **Data and universe**: fetch prices and fundamentals, check quality, filter to a tradable stock universe.
+2. **Market regime assessment**: classify the current market state, for example trend, volatility, or risk-on versus risk-off.
+3. **Signal and alpha models**: score stocks with ML factor and return forecasts under leakage-safe cross-validation.
+4. **Fundamental and news research**: write a cited research note per top candidate.
+5. **Stock and weight proposal**: given the regime, scores, and research, propose candidate stocks and initial portfolio weights.
+6. **Adversarial debate**: agents argue for and against the proposal to expose weak picks and hidden risks.
+7. **Weight adjustment**: revise the weights based on the debate's outcome.
+8. **Risk check**: enforce hard limits on position size, sector exposure, volatility, drawdown, and liquidity.
+9. **Cost-aware execution plan**: turn approved weights into rebalancing trades with transaction costs and turnover limits.
+10. **Backtest and evaluation**: test the whole pipeline historically and score agent outputs (offline).
+11. **Monitoring and decision journal**: track live performance and keep an audit trail of every decision.
 
-More stages may follow ("etc." in the original brief). Keep each agent separate and give stages explicit, typed inputs and outputs, so that a stage can be tested, replaced, or rerun on its own.
+Keep each agent separate and give stages explicit, typed inputs and outputs, so that a stage can be tested, replaced, or rerun on its own.
 
 ## Project status
 
-There is no source code yet: the only tracked files are this one and `.gitignore`. No language, dependency manager, build, lint, or test commands have been chosen. Once they exist, update this file with the commands (including how to run a single test) and the actual module layout.
+There is no source code yet: the only tracked files are this one, `PLAN.md`, and `.gitignore`. No language, dependency manager, build, lint, or test commands have been chosen. Once they exist, update this file with the commands (including how to run a single test) and the actual module layout.
 
 ## Reference material is local only
 
